@@ -1,19 +1,46 @@
-body {
-	font-family: system-ui, Arial, sans-serif;
-	padding: 2rem;
-	background: #f6f8fa;
+:root {
+    --primary: #4f46e5;
+    --bg-light: #f3f4f6;
+    --sidebar-bg: #1e1b4b;
+    --text-main: #111827;
 }
-main {
-	max-width: 640px;
-	margin: 0 auto;
-	background: #fff;
-	padding: 1.5rem;
-	border-radius: 8px;
-	box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+
+body, html {
+    margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-light); color: var(--text-main); height: 100%;
 }
-h1 { margin-top: 0; }
-form { display: flex; gap: 8px; margin-bottom: 1rem; }
-input { flex: 1; padding: 8px; }
-button { padding: 8px 12px; }
-ul { list-style: none; padding: 0; margin: 0; }
-li { padding: 8px 0; border-bottom: 1px solid #eee; }
+
+.app-container { display: flex; height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+    width: 260px; background: var(--sidebar-bg); color: white; padding: 30px 20px;
+}
+.sidebar .logo { font-size: 24px; font-weight: bold; margin-bottom: 40px; }
+.sidebar .logo span { color: var(--primary); }
+.sidebar ul { list-style: none; padding: 0; }
+.sidebar li { 
+    padding: 15px; margin-bottom: 10px; border-radius: 8px; cursor: pointer; transition: 0.3s;
+}
+.sidebar li:hover, .sidebar li.active { background: var(--primary); }
+
+/* Main Content */
+.main-content { flex: 1; padding: 40px; overflow-y: auto; }
+header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+.adviser-badge { background: white; padding: 10px 20px; border-radius: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-weight: 600; }
+
+/* Services Grid */
+.services-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+.service-card {
+    background: white; padding: 30px; border-radius: 16px; text-align: center;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;
+}
+.service-card:hover { transform: translateY(-5px); }
+.service-card .icon { font-size: 40px; margin-bottom: 15px; }
+
+/* Modal */
+.modal { position: fixed; top:0; left:0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; }
+.hidden { display: none; }
+.modal-box { background: white; width: 450px; padding: 30px; border-radius: 12px; position: relative; }
+.close-btn { position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; }
+#step-list li { margin-bottom: 12px; line-height: 1.6; }

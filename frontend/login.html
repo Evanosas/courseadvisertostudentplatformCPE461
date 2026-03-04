@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CourseQ | Login & Register</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 900px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            min-height: 600px;
+        }
+
+        .brand-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .brand-section h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .brand-section span {
+            color: #ffd89b;
+        }
+
+        .brand-section p {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .form-section {
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .form-tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #999;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .user-type-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .type-option {
+            flex: 1;
+        }
+
+        .type-option input {
+            display: none;
+        }
+
+        .type-option label {
+            display: block;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .type-option input:checked + label {
+            border-color: #667eea;
+            background-color: #f0f4ff;
+            color: #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .divider {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 10px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e0e0e0;
+            z-index: -1;
+        }
+
+        .oauth-btn {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+            background: white;
+            color: #333;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .oauth-btn:hover {
+            background: #f5f5f5;
+            border-color: #667eea;
+        }
+
+        .oauth-btn.google {
+            margin-bottom: 0;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.error {
+            background-color: #ffe6e6;
+            color: #cc0000;
+            border: 1px solid #ff9999;
+        }
+
+        .message.success {
+            background-color: #e6ffe6;
+            color: #00cc00;
+            border: 1px solid #99ff99;
+        }
+
+        .form-content {
+            display: none;
+        }
+
+        .form-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .brand-section {
+                padding: 30px;
+                min-height: 200px;
+            }
+
+            .form-section {
+                padding: 30px;
+            }
+
+            .brand-section h1 {
+                font-size: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="wrapper">
+            <!-- Brand Section -->
+            <div class="brand-section">
+                <h1>Course<span>Q</span></h1>
+                <p>Your comprehensive platform for academic advising and course management</p>
+                <p style="font-size: 14px; opacity: 0.8;">Seamlessly manage your academic journey with your dedicated course adviser</p>
+            </div>
+
+            <!-- Form Section -->
+            <div class="form-section">
+                <!-- Tabs -->
+                <div class="form-tabs">
+                    <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+                    <button class="tab-btn" onclick="switchTab('register')">Register</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="login" class="form-content active">
+                    <div id="login-message" class="message"></div>
+                    
+                    <div class="form-group">
+                        <label>I am a:</label>
+                        <div class="user-type-selector">
+                            <div class="type-option">
+                                <input type="radio" id="login-student" name="login-type" value="student" checked>
+                                <label for="login-student">Student</label>
+                            </div>
+                            <div class="type-option">
+                                <input type="radio" id="login-adviser" name="login-type" value="adviser">
+                                <label for="login-adviser">Course Adviser</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="login-email">Email Address</label>
+                        <input type="email" id="login-email" placeholder="Enter your email">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" placeholder="Enter your password">
+                    </div>
+
+                    <button class="submit-btn" onclick="handleLogin()">Login</button>
+
+                    <div class="divider"><span>OR</span></div>
+
+                    <button class="oauth-btn google" onclick="loginWithGoogle()">
+                        🔵 Continue with Google
+                    </button>
+                </div>
+
+                <!-- Register Form -->
+                <div id="register" class="form-content">
+                    <div id="register-message" class="message"></div>
+                    
+                    <div class="form-group">
+                        <label>Register as:</label>
+                        <div class="user-type-selector">
+                            <div class="type-option">
+                                <input type="radio" id="register-student" name="register-type" value="student" checked>
+                                <label for="register-student">Student</label>
+                            </div>
+                            <div class="type-option">
+                                <input type="radio" id="register-adviser" name="register-type" value="adviser">
+                                <label for="register-adviser">Course Adviser</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="register-name">Full Name</label>
+                        <input type="text" id="register-name" placeholder="Enter your full name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="register-email">Email Address</label>
+                        <input type="email" id="register-email" placeholder="Enter your email">
+                    </div>
+
+                    <div id="matric-group" class="form-group">
+                        <label for="register-matric">Matric Number</label>
+                        <input type="text" id="register-matric" placeholder="e.g., MKU/2023/001">
+                    </div>
+
+                    <div id="staff-group" class="form-group" style="display: none;">
+                        <label for="register-staff">Staff ID</label>
+                        <input type="text" id="register-staff" placeholder="e.g., ADV/2023/001">
+                    </div>
+
+                    <div id="dept-group" class="form-group" style="display: none;">
+                        <label for="register-dept">Department</label>
+                        <input type="text" id="register-dept" placeholder="e.g., Computer Science">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" placeholder="Enter a strong password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="register-confirm">Confirm Password</label>
+                        <input type="password" id="register-confirm" placeholder="Confirm your password">
+                    </div>
+
+                    <button class="submit-btn" onclick="handleRegister()">Create Account</button>
+
+                    <div class="divider"><span>OR</span></div>
+
+                    <button class="oauth-btn google" onclick="registerWithGoogle()">
+                        🔵 Sign up with Google
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Switch between tabs
+        function switchTab(tab) {
+            document.querySelectorAll('.form-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Toggle fields based on user type
+        document.querySelectorAll('input[name="register-type"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const isAdviser = e.target.value === 'adviser';
+                document.getElementById('matric-group').style.display = isAdviser ? 'none' : 'block';
+                document.getElementById('staff-group').style.display = isAdviser ? 'block' : 'none';
+                document.getElementById('dept-group').style.display = isAdviser ? 'block' : 'none';
+            });
+        });
+
+        // Show message
+        function showMessage(elementId, message, isError = false) {
+            const msgEl = document.getElementById(elementId);
+            msgEl.textContent = message;
+            msgEl.className = 'message ' + (isError ? 'error' : 'success');
+            msgEl.style.display = 'block';
+            setTimeout(() => {
+                msgEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Handle Login
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const userType = document.querySelector('input[name="login-type"]:checked').value;
+
+            if (!email || !password) {
+                showMessage('login-message', 'Please fill in all fields', true);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, userType })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showMessage('login-message', data.message || 'Login failed', true);
+                    return;
+                }
+
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('userType', data.userType);
+                localStorage.setItem('userId', data.userId);
+                localStorage.setItem('userName', data.userName);
+
+                showMessage('login-message', 'Login successful! Redirecting...', false);
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+            } catch (error) {
+                showMessage('login-message', 'An error occurred. Please try again.', true);
+            }
+        }
+
+        // Handle Register
+        async function handleRegister() {
+            const name = document.getElementById('register-name').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value;
+            const confirm = document.getElementById('register-confirm').value;
+            const userType = document.querySelector('input[name="register-type"]:checked').value;
+
+            if (!name || !email || !password || !confirm) {
+                showMessage('register-message', 'Please fill in all fields', true);
+                return;
+            }
+
+            if (password !== confirm) {
+                showMessage('register-message', 'Passwords do not match', true);
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage('register-message', 'Password must be at least 6 characters', true);
+                return;
+            }
+
+            const matricNo = userType === 'student' ? document.getElementById('register-matric').value.trim() : null;
+            const staffId = userType === 'adviser' ? document.getElementById('register-staff').value.trim() : null;
+            const department = userType === 'adviser' ? document.getElementById('register-dept').value.trim() : null;
+
+            if (userType === 'student' && !matricNo) {
+                showMessage('register-message', 'Matric number is required', true);
+                return;
+            }
+
+            if (userType === 'adviser' && (!staffId || !department)) {
+                showMessage('register-message', 'Staff ID and Department are required', true);
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fullName: name,
+                        email,
+                        password,
+                        userType,
+                        matricNo,
+                        staffId,
+                        department,
+                        registeredWith: 'email'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showMessage('register-message', data.message || 'Registration failed', true);
+                    return;
+                }
+
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('userType', data.userType);
+                localStorage.setItem('userId', data.userId);
+                localStorage.setItem('userName', data.userName);
+
+                showMessage('register-message', 'Registration successful! Redirecting...', false);
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+            } catch (error) {
+                showMessage('register-message', 'An error occurred. Please try again.', true);
+            }
+        }
+
+        // Google OAuth
+        function loginWithGoogle() {
+            const userType = document.querySelector('input[name="login-type"]:checked').value;
+            window.location.href = `/api/auth/google?userType=${encodeURIComponent(userType)}`;
+        }
+
+        function registerWithGoogle() {
+            const userType = document.querySelector('input[name="register-type"]:checked').value;
+            window.location.href = `/api/auth/google?register=true&userType=${encodeURIComponent(userType)}`;
+        }
+    </script>
+</body>
+</html>
