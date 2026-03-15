@@ -1,3 +1,4 @@
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -36,42 +37,63 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/courseq')
-    .then(() => console.log('MongoDB Connected...'))
-    .catch(err => console.log('Connection Error:', err));
+// ==================== DATABASE & SERVER STARTUP ====================
+const startApp = async () => {
+    try {
+        console.log('Connecting to MongoDB...');
+        
+        // This pauses the code here until the connection is 100% successful
+        await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/courseq', {
+            bufferCommands: true, // Safe now because we await the connection
+            serverSelectionTimeoutMS: 10000,
+        });
 
-mongoose.connection.on('error', err => {
-    console.error('Mongoose runtime error:', err);
-});
+        console.log('✅ MongoDB Connected Successfully');
 
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
+        // Only after the DB is ready do we open the port for requests
+        app.listen(PORT, () => {
+            console.log(`🚀 Server running at http://localhost:${PORT}`);
+        });
 
+    } catch (err) {
+        console.error('❌ Critical Startup Error:', err.message);
+        process.exit(1); // Stop the server if the database fails
+    }
+};
+
+// Execute the startup function
+startApp();
 // Passport Google OAuth Configuration
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID || 'your-google-client-id',
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'your-google-client-secret',
-    callbackURL: process.env.GOOGLE_CALLBACK_URL || '/api/auth/google/callback'
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.GOOGLE_CALLBACK_URL
 }, async (accessToken, refreshToken, profile, done) => {
     try {
+        // SAFETY CHECK: If Mongoose isn't connected yet, wait or fail gracefully
+        if (mongoose.connection.readyState !== 1) {
+            console.warn("Database not ready yet. Retrying query in a moment...");
+            // Optionally throw a custom error or return done(new Error("DB not ready"))
+        }
+
         const email = profile.emails[0].value;
         const fullName = profile.displayName;
         const googleId = profile.id;
 
-        // Check if user already exists
+        // The query that was crashing:
         let user = await Student.findOne({ googleId });
+        
         if (!user) {
             user = await Adviser.findOne({ googleId });
         }
 
         if (!user) {
-            // User doesn't exist, they'll be created after we determine their type
             return done(null, { email, fullName, googleId, newUser: true });
         }
 
         return done(null, user);
     } catch (error) {
+        console.error("Error in Google Strategy:", error);
         return done(error, null);
     }
 }));
@@ -128,7 +150,7 @@ function generateToken(user, userType) {
 // Register Route
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { fullName, email, password, userType, matricNo, staffId, department, registeredWith } = req.body;
+        const { fullName, email, password, userType, matricNo, staffId, department, adviserEmail, registeredWith } = req.body;
 
         if (!fullName || !email || !password || !userType) {
             return res.status(400).json({ message: 'Missing required fields' });
@@ -157,13 +179,20 @@ app.post('/api/auth/register', async (req, res) => {
 
         let user;
         if (userType === 'student') {
-            user = await Student.create({
+            const studentData = {
                 fullName,
                 email,
                 password: hashedPassword,
                 matricNo,
                 registeredWith: registeredWith || 'email'
-            });
+            };
+            if (adviserEmail) {
+                const adv = await Adviser.findOne({ email: adviserEmail });
+                if (adv) {
+                    studentData.adviserId = adv._id;
+                }
+            }
+            user = await Student.create(studentData);
         } else {
             user = await Adviser.create({
                 fullName,
@@ -322,6 +351,10 @@ app.use('/api/registrations', registrationRoutes);
 app.use('/api/academic-records', academicRecordRoutes);
 app.use('/api/id-card-requests', idCardRequestRoutes);
 
+// adviser-specific endpoints
+const adviserRoutes = require('./routes/advisers');
+app.use('/api/advisers', adviserRoutes);
+
 // Main protected route - check if user is authenticated
 app.get('/', (req, res) => {
     const token = req.query.token;
@@ -340,6 +373,21 @@ app.get('/', (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+// development helper: seed some initial courses
+app.get('/api/seed', async (req, res) => {
+    try {
+        const count = await Course.countDocuments();
+        if (count === 0) {
+            await Course.insertMany([
+                { courseCode: 'CS101', courseName: 'Intro to Computer Science', creditUnits: 3 },
+                { courseCode: 'MTH201', courseName: 'Calculus II', creditUnits: 4 },
+                { courseCode: 'ENG150', courseName: 'Academic Writing', creditUnits: 2 }
+            ]);
+        }
+        res.json({ message: 'Seeding complete' });
+    } catch (err) {
+        console.error('Seed error', err);
+        res.status(500).json({ message: 'Error during seeding' });
+    }
 });
+

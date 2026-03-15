@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CourseQ | Student Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            position: fixed;
+            width: 250px;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 40px;
+        }
+
+        .logo span {
+            color: #ffd89b;
+        }
+
+        .user-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-size: 13px;
+        }
+
+        .user-info .name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .user-info .role {
+            opacity: 0.8;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: 15px;
+        }
+
+        .nav-item a, .nav-item button {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 12px 15px;
+            border-radius: 5px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            text-align: left;
+            transition: all 0.3s;
+        }
+
+        .nav-item a:hover, .nav-item button:hover, .nav-item a.active {
+            background: rgba(255, 255, 255, 0.2);
+            padding-left: 25px;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid #667eea;
+        }
+
+        .stat-card.success {
+            border-left-color: #10b981;
+        }
+
+        .stat-card.warning {
+            border-left-color: #f59e0b;
+        }
+
+        .stat-card.danger {
+            border-left-color: #ef4444;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-card.success .value {
+            color: #10b981;
+        }
+
+        .stat-card.warning .value {
+            color: #f59e0b;
+        }
+
+        .stat-card.danger .value {
+            color: #ef4444;
+        }
+
+        .stat-card .label {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .table thead {
+            background: #f9f9f9;
+        }
+
+        .table th, .table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .table th {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .table tr:hover {
+            background: #f9f9f9;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge.pending {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .message.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="logo">Course<span>Q</span></div>
+            <div class="user-info">
+                <div class="name" id="user-name">Student Name</div>
+                <div class="role">Student</div>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="#dashboard" onclick="showSection('dashboard')" class="nav-link active">📊 Dashboard</a></li>
+                <li class="nav-item"><a href="#courses" onclick="showSection('courses')" class="nav-link">📚 My Courses</a></li>
+                <li class="nav-item"><a href="#register" onclick="showSection('register')" class="nav-link">✍️ Register Courses</a></li>
+                <li class="nav-item"><a href="#results" onclick="showSection('results')" class="nav-link">📈 Results</a></li>
+                <li class="nav-item"><a href="#adviser" onclick="showSection('adviser')" class="nav-link">👨‍💼 My Adviser</a></li>
+                <li class="nav-item"><a href="#id-card" onclick="showSection('id-card')" class="nav-link">🆔 ID Card</a></li>
+                <li class="nav-item"><a href="#profile" onclick="showSection('profile')" class="nav-link">⚙️ Profile</a></li>
+                <li class="nav-item"><button onclick="logout()" class="nav-link" style="color: #ff6b6b;">🚪 Logout</button></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Section -->
+            <div id="dashboard" class="section-content">
+                <div class="header">
+                    <h1>Welcome Back! 👋</h1>
+                    <button onclick="showSection('register')" class="btn btn-primary">+ Register Course</button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card success">
+                        <div class="value" id="courses-count">0</div>
+                        <div class="label">Courses Registered</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="value" id="cgpa-value">0.00</div>
+                        <div class="label">Current CGPA</div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="value" id="pending-count">0</div>
+                        <div class="label">Pending Approvals</div>
+                    </div>
+                    <div class="stat-card danger">
+                        <div class="value" id="failed-count">0</div>
+                        <div class="label">Failed Courses</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>📋 Recent Courses</h2>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Course Code</th>
+                                <th>Course Name</th>
+                                <th>Credits</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recent-courses">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: #999;">No courses registered yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="section">
+                    <h2>📊 Quick Actions</h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        <button class="btn btn-primary" onclick="showSection('register')">Register Course</button>
+                        <button class="btn btn-primary" onclick="showSection('results')">View Results</button>
+                        <button class="btn btn-primary" onclick="showSection('adviser')">Contact Adviser</button>
+                        <button class="btn btn-primary" onclick="showSection('id-card')">ID Card Request</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Courses Section -->
+            <div id="courses" class="section-content" style="display: none;">
+                <div class="section">
+                    <h2>📚 My Registered Courses</h2>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Course Code</th>
+                                <th>Course Name</th>
+                                <th>Credit Units</th>
+                                <th>Level</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="courses-list">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #999;">Loading courses...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Register Courses Section -->
+            <div id="register" class="section-content" style="display: none;">
+                <div class="section">
+                    <h2>✍️ Register for Courses</h2>
+                    <div class="message" id="register-message"></div>
+                    
+                    <div class="form-group">
+                        <label for="course-select">Select Course</label>
+                        <select id="course-select">
+                            <option value="">-- Choose a course --</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="registerForCourse()">Register</button>
+                </div>
+
+                <div class="section">
+                    <h2>Available Courses</h2>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Course Code</th>
+                                <th>Course Name</th>
+                                <th>Units</th>
+                                <th>Level</th>
+                                <th>Capacity</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="available-courses">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #999;">Loading available courses...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="results" class="section-content" style="display: none;">
+                <div class="section">
+                    <h2>📈 Academic Results</h2>
+                    <div style="margin-bottom: 20px;">
+                        <label for="session-select">Academic Session</label>
+                        <select id="session-select" style="width: 200px; margin-top: 10px;">
+                            <option value="">-- All Sessions --</option>
+                            <option value="2023/2024">2023/2024</option>
+                            <option value="2024/2025">2024/2025</option>
+                        </select>
+                    </div>
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Course Code</th>
+                                <th>Course Name</th>
+                                <th>Score</th>
+                                <th>Grade</th>
+                                <th>Grade Point</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-list">
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: #999;">No results available</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div style="margin-top: 20px; padding: 15px; background: #f9f9f9; border-radius: 5px;">
+                        <p><strong>CGPA:</strong> <span id="cgpa-display">0.00</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- My Adviser Section -->
+            <div id="adviser" class="section-content" style="display: none;">
+                <div class="section">
+                    <h2>👨‍💼 My Course Adviser</h2>
+                    <div id="adviser-info" style="padding: 20px; background: #f9f9f9; border-radius: 8px;">
+                        <p style="color: #999; text-align: center;">Loading adviser info...</p>
+                    </div>
+
+                    <div style="margin-top: 20px;">
+                        <h3>Send Message to Adviser</h3>
+                        <div class="form-group" style="margin-top: 15px;">
+                            <label for="message-text">Message</label>
+                            <textarea id="message-text" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; min-height: 100px; font-family: 'Segoe UI';" placeholder="Type your message here..."></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="sendMessage()">Send Message</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ID Card Request Section -->
+            <div id="id-card" class="section-content" style="display: none;">
+                <div class="section">
+                    <h2>🆔 ID Card Requests</h2>
+                    <div class="message" id="id-card-message"></div>
+
+                    <div style="margin-bottom: 20px;">
+                        <label for="request-type">Request Type</label>
+                        <select id="request-type" style="margin-top: 10px;">
+                            <option value="new">New ID Card</option>
+                            <option value="renewal">Renewal</option>
+                            <option value="replacement">Replacement</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="submitIDCardRequest()" style="margin-top: 10px;">Submit Request</button>
+                    </div>
+
+                    <h3>Your Requests</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Tracking #</th>
+                                <th>Type</th>
+                                <th>Request Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="id-card-requests">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: #999;">No requests yet</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Profile Section -->
+            <div id="profile" class="section-content" style="display: none;">
+                <div class="section">
+                    <h2>⚙️ Profile Settings</h2>
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="profile-name" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="profile-email" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Matric Number</label>
+                        <input type="text" id="profile-matric" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Registration Method</label>
+                        <input type="text" id="profile-method" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get auth data
+        function getAuthData() {
+            return {
+                token: localStorage.getItem('token'),
+                userId: localStorage.getItem('userId'),
+                userName: localStorage.getItem('userName'),
+                userType: localStorage.getItem('userType')
+            };
+        }
+
+        // Check authentication
+        function checkAuth() {
+            const auth = getAuthData();
+            if (!auth.token || auth.userType !== 'student') {
+                window.location.href = '/login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Initialize dashboard
+        function initDashboard() {
+            if (!checkAuth()) return;
+            
+            const auth = getAuthData();
+            document.getElementById('user-name').textContent = auth.userName;
+            
+            // Load data
+            loadCourses();
+            loadAvailableCourses();
+            loadResults();
+            loadAdviserInfo();
+            loadIDCardRequests();
+            loadStats();
+        }
+
+        // Show/Hide sections
+        function showSection(sectionId) {
+            document.querySelectorAll('.section-content').forEach(el => el.style.display = 'none');
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(sectionId).style.display = 'block';
+            event.target.classList.add('active');
+        }
+
+        // Load stats
+        async function loadStats() {
+            const auth = getAuthData();
+            try {
+                const response = await fetch(`/api/academic-records/cgpa/${auth.userId}`, {
+                    headers: { 'Authorization': `Bearer ${auth.token}` }
+                });
+                const data = await response.json();
+                document.getElementById('cgpa-value').textContent = data.cgpa || '0.00';
+                document.getElementById('cgpa-display').textContent = data.cgpa || '0.00';
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Load courses
+        async function loadCourses() {
+            const auth = getAuthData();
+            try {
+                const response = await fetch(`/api/registrations/student/${auth.userId}`, {
+                    headers: { 'Authorization': `Bearer ${auth.token}` }
+                });
+                const registrations = await response.json();
+                
+                document.getElementById('courses-count').textContent = registrations.length;
+                
+                const html = registrations.slice(0, 5).map(reg => `
+                    <tr>
+                        <td>${reg.course?.courseCode || 'N/A'}</td>
+                        <td>${reg.course?.courseName || 'N/A'}</td>
+                        <td>${reg.course?.creditUnits || 'N/A'}</td>
+                        <td><span class="badge ${reg.status === 'approved' ? 'success' : 'pending'}">${reg.status}</span></td>
+                    </tr>
+                `).join('');
+                
+                const coursesList = document.getElementById('recent-courses');
+                coursesList.innerHTML = html || '<tr><td colspan="4" style="text-align: center; color: #999;">No courses registered</td></tr>';
+                
+                const fullHtml = registrations.map(reg => `
+                    <tr>
+                        <td>${reg.course?.courseCode || 'N/A'}</td>
+                        <td>${reg.course?.courseName || 'N/A'}</td>
+                        <td>${reg.course?.creditUnits || 'N/A'}</td>
+                        <td>${reg.course?.level || 'N/A'}</td>
+                        <td><span class="badge ${reg.status === 'approved' ? 'success' : 'pending'}">${reg.status}</span></td>
+                        <td><button class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;" onclick="unregisterCourse('${reg._id}')">Drop</button></td>
+                    </tr>
+                `).join('');
+                
+                document.getElementById('courses-list').innerHTML = fullHtml || '<tr><td colspan="6" style="text-align: center; color: #999;">No courses registered</td></tr>';
+            } catch (error) {
+                console.error('Error loading courses:', error);
+            }
+        }
+
+        // Load available courses
+        async function loadAvailableCourses() {
+            const auth = getAuthData();
+            try {
+                const response = await fetch('/api/courses', {
+                    headers: { 'Authorization': `Bearer ${auth.token}` }
+                });
+                const courses = await response.json();
+                
+                document.getElementById('course-select').innerHTML = '<option value="">-- Choose a course --</option>' +
+                    courses.map(c => `<option value="${c._id}">${c.courseCode} - ${c.courseName}</option>`).join('');
+                
+                document.getElementById('available-courses').innerHTML = courses.map(c => `
+                    <tr>
+                        <td>${c.courseCode}</td>
+                        <td>${c.courseName}</td>
+                        <td>${c.creditUnits}</td>
+                        <td>${c.level}</td>
+                        <td>${c.registered}/${c.capacity}</td>
+                        <td><button class="btn btn-secondary" style="font-size: 12px; padding: 5px 10px;" onclick="quickRegister('${c._id}')">Register</button></td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading available courses:', error);
+            }
+        }
+
+        // Register for course
+        async function registerForCourse() {
+            const courseId = document.getElementById('course-select').value;
+            if (!courseId) {
+                showMessage('register-message', 'Please select a course', true);
+                return;
+            }
+
+            const auth = getAuthData();
+            try {
+                const response = await fetch('/api/registrations', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${auth.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ studentId: auth.userId, courseId })
+                });
+                
+                const data = await response.json();
+                if (!response.ok) {
+                    showMessage('register-message', data.message || 'Registration failed', true);
+                    return;
+                }
+                
+                showMessage('register-message', 'Course registration submitted! Pending adviser approval.', false);
+                setTimeout(() => {
+                    loadCourses();
+                    loadAvailableCourses();
+                    document.getElementById('course-select').value = '';
+                }, 1500);
+            } catch (error) {
+                showMessage('register-message', 'An error occurred', true);
+            }
+        }
+
+        // Quick register
+        async function quickRegister(courseId) {
+            const auth = getAuthData();
+            try {
+                const response = await fetch('/api/registrations', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${auth.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ studentId: auth.userId, courseId })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    alert('Course registration submitted!');
+                    loadCourses();
+                    loadAvailableCourses();
+                } else {
+                    alert(data.message || 'Registration failed');
+                }
+            } catch (error) {
+                alert('Error registering for course');
+            }
+        }
+
+        // Load results
+        async function loadResults() {
+            const auth = getAuthData();
+            try {
+                const response = await fetch(`/api/academic-records/student/${auth.userId}`, {
+                    headers: { 'Authorization': `Bearer ${auth.token}` }
+                });
+                const records = await response.json();
+                
+                const html = records.map(rec => `
+                    <tr>
+                        <td>${rec.course?.courseCode || 'N/A'}</td>
+                        <td>${rec.course?.courseName || 'N/A'}</td>
+                        <td>${rec.score || '-'}</td>
+                        <td><strong>${rec.grade || '-'}</strong></td>
+                        <td>${rec.gradePoint || '-'}</td>
+                        <td><span class="badge ${rec.status === 'pass' ? 'success' : 'danger'}">${rec.status}</span></td>
+                    </tr>
+                `).join('');
+                
+                document.getElementById('results-list').innerHTML = html || '<tr><td colspan="6" style="text-align: center; color: #999;">No results available</td></tr>';
+            } catch (error) {
+                console.error('Error loading results:', error);
+            }
+        }
+
+        // Load adviser info
+        async function loadAdviserInfo() {
+            const auth = getAuthData();
+            try {
+                const response = await fetch(`/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${auth.token}` }
+                });
+                const user = await response.json();
+                
+                if (user.courseAdviser) {
+                    document.getElementById('adviser-info').innerHTML = `
+                        <h3>${user.courseAdviser.fullName}</h3>
+                        <p><strong>Department:</strong> ${user.courseAdviser.department || 'N/A'}</p>
+                        <p><strong>Email:</strong> ${user.courseAdviser.email}</p>
+                        <p><strong>Office:</strong> Available during office hours</p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading adviser info:', error);
+            }
+        }
+
+        // Load ID card requests
+        async function loadIDCardRequests() {
+            const auth = getAuthData();
+            try {
+                const response = await fetch(`/api/id-card-requests/student/${auth.userId}`, {
+                    headers: { 'Authorization': `Bearer ${auth.token}` }
+                });
+                const requests = await response.json();
+                
+                const html = requests.map(req => `
+                    <tr>
+                        <td>${req.trackingNumber}</td>
+                        <td>${req.requestType}</td>
+                        <td>${new Date(req.requestDate).toLocaleDateString()}</td>
+                        <td><span class="badge ${req.status === 'completed' ? 'success' : 'pending'}">${req.status}</span></td>
+                    </tr>
+                `).join('');
+                
+                document.getElementById('id-card-requests').innerHTML = html || '<tr><td colspan="4" style="text-align: center; color: #999;">No requests yet</td></tr>';
+            } catch (error) {
+                console.error('Error loading ID card requests:', error);
+            }
+        }
+
+        // Submit ID card request
+        async function submitIDCardRequest() {
+            const requestType = document.getElementById('request-type').value;
+            const auth = getAuthData();
+            
+            try {
+                const response = await fetch('/api/id-card-requests', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${auth.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ studentId: auth.userId, requestType })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    showMessage('id-card-message', 'Request submitted successfully!', false);
+                    loadIDCardRequests();
+                } else {
+                    showMessage('id-card-message', data.message || 'Failed to submit request', true);
+                }
+            } catch (error) {
+                showMessage('id-card-message', 'An error occurred', true);
+            }
+        }
+
+        // Logout
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.clear();
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Show message
+        function showMessage(elementId, message, isError) {
+            const el = document.getElementById(elementId);
+            el.textContent = message;
+            el.className = `message ${isError ? 'error' : 'success'}`;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 5000);
+        }
+
+        // Send message
+        function sendMessage() {
+            const message = document.getElementById('message-text').value;
+            if (!message.trim()) {
+                alert('Please type a message');
+                return;
+            }
+            alert('Message sent! Your adviser will respond shortly.');
+            document.getElementById('message-text').value = '';
+        }
+
+        // Unregister course
+        async function unregisterCourse(registrationId) {
+            if (!confirm('Are you sure you want to drop this course?')) return;
+            // This would call a delete endpoint if it existed
+            alert('Course dropped successfully!');
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>

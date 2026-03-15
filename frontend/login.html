@@ -223,6 +223,27 @@
             margin-bottom: 0;
         }
 
+        /* Additional styles for dashboard lists */
+        .course-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .course-list .service-card {
+            cursor: default;
+        }
+
+        #student-list ul, #pending-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        #student-list li, #pending-list li {
+            margin-bottom: 8px;
+        }
+
         .message {
             padding: 12px;
             border-radius: 5px;
@@ -358,6 +379,11 @@
                         <input type="text" id="register-matric" placeholder="e.g., MKU/2023/001">
                     </div>
 
+                    <div id="adv-group" class="form-group" style="display: none;">
+                        <label for="register-adv">Adviser Email</label>
+                        <input type="email" id="register-adv" placeholder="Your adviser\'s email address">
+                    </div>
+
                     <div id="staff-group" class="form-group" style="display: none;">
                         <label for="register-staff">Staff ID</label>
                         <input type="text" id="register-staff" placeholder="e.g., ADV/2023/001">
@@ -391,6 +417,11 @@
     </div>
 
     <script>
+        // Clear localStorage on login page load
+        window.addEventListener('DOMContentLoaded', () => {
+            localStorage.clear();
+        });
+
         // Switch between tabs
         function switchTab(tab) {
             document.querySelectorAll('.form-content').forEach(el => el.classList.remove('active'));
@@ -405,6 +436,7 @@
             radio.addEventListener('change', (e) => {
                 const isAdviser = e.target.value === 'adviser';
                 document.getElementById('matric-group').style.display = isAdviser ? 'none' : 'block';
+                document.getElementById('adv-group').style.display = isAdviser ? 'none' : 'block';
                 document.getElementById('staff-group').style.display = isAdviser ? 'block' : 'none';
                 document.getElementById('dept-group').style.display = isAdviser ? 'block' : 'none';
             });
@@ -484,6 +516,7 @@
             }
 
             const matricNo = userType === 'student' ? document.getElementById('register-matric').value.trim() : null;
+            const adviserEmail = userType === 'student' ? document.getElementById('register-adv').value.trim() : null;
             const staffId = userType === 'adviser' ? document.getElementById('register-staff').value.trim() : null;
             const department = userType === 'adviser' ? document.getElementById('register-dept').value.trim() : null;
 
@@ -507,6 +540,7 @@
                         password,
                         userType,
                         matricNo,
+                        adviserEmail,
                         staffId,
                         department,
                         registeredWith: 'email'
