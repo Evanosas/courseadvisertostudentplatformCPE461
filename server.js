@@ -17,12 +17,19 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-producti
 // Import Models
 const Student = require('./models/student');
 const Adviser = require('./models/adviser');
+const Course = require('./models/course');
+const CourseRegistration = require('./models/courseRegistration');
+const AcademicRecord = require('./models/academicRecord');
+const IDCardRequest = require('./models/idCardRequest');
+const Message = require('./models/message');
 
 // Import Routes
 const courseRoutes = require('./routes/courses');
 const registrationRoutes = require('./routes/registrations');
 const academicRecordRoutes = require('./routes/academicRecords');
 const idCardRequestRoutes = require('./routes/idCardRequests');
+const adviserRoutes = require('./routes/advisers');
+const messageRoutes = require('./routes/messages');
 
 // Middleware
 app.use(cors());
@@ -36,53 +43,45 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// MongoDB Connection
 // ==================== DATABASE & SERVER STARTUP ====================
 const startApp = async () => {
     try {
         console.log('Connecting to MongoDB...');
-        
-        // This pauses the code here until the connection is 100% successful
         await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/courseq', {
-            bufferCommands: true, // Safe now because we await the connection
+            bufferCommands: true,
             serverSelectionTimeoutMS: 10000,
         });
 
         console.log('✅ MongoDB Connected Successfully');
 
-        // Only after the DB is ready do we open the port for requests
         app.listen(PORT, () => {
             console.log(`🚀 Server running at http://localhost:${PORT}`);
         });
 
     } catch (err) {
         console.error('❌ Critical Startup Error:', err.message);
-        process.exit(1); // Stop the server if the database fails
+        process.exit(1);
     }
 };
 
-// Execute the startup function
 startApp();
-// Passport Google OAuth Configuration
+
+// ==================== PASSPORT GOOGLE OAUTH ====================
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     callbackURL: process.env.GOOGLE_CALLBACK_URL
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        // SAFETY CHECK: If Mongoose isn't connected yet, wait or fail gracefully
         if (mongoose.connection.readyState !== 1) {
-            console.warn("Database not ready yet. Retrying query in a moment...");
-            // Optionally throw a custom error or return done(new Error("DB not ready"))
+            console.warn("Database not ready yet.");
         }
 
         const email = profile.emails[0].value;
         const fullName = profile.displayName;
         const googleId = profile.id;
 
-        // The query that was crashing:
         let user = await Student.findOne({ googleId });
-        
         if (!user) {
             user = await Adviser.findOne({ googleId });
         }
@@ -119,7 +118,7 @@ passport.deserializeUser(async (data, done) => {
     }
 });
 
-// Authentication Middleware
+// ==================== AUTH MIDDLEWARE ====================
 const authenticateToken = (req, res, next) => {
     const token = req.headers['authorization']?.split(' ')[1] || req.query.token;
 
@@ -136,7 +135,6 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// Helper function to generate JWT
 function generateToken(user, userType) {
     return jwt.sign({
         userId: user._id,
@@ -174,7 +172,6 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ message: 'Email already registered' });
         }
 
-        // Hash password
         const hashedPassword = await bcryptjs.hash(password, 10);
 
         let user;
@@ -189,7 +186,7 @@ app.post('/api/auth/register', async (req, res) => {
             if (adviserEmail) {
                 const adv = await Adviser.findOne({ email: adviserEmail });
                 if (adv) {
-                    studentData.adviserId = adv._id;
+                    studentData.courseAdviser = adv._id;
                 }
             }
             user = await Student.create(studentData);
@@ -239,7 +236,6 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
 
-        // Compare passwords
         const validPassword = await bcryptjs.compare(password, user.password || '');
         if (!validPassword) {
             return res.status(401).json({ message: 'Invalid email or password' });
@@ -263,7 +259,6 @@ app.post('/api/auth/login', async (req, res) => {
 // Google OAuth Routes
 app.get('/api/auth/google',
     (req, res, next) => {
-        // allow frontend to pass userType and register flag
         if (req.query.register === 'true') {
             req.session.registerMode = true;
         }
@@ -286,7 +281,6 @@ app.get('/api/auth/google/callback',
             let user = profile._id ? profile : null;
 
             if (!user && profile.newUser) {
-                // Create new user
                 const email = profile.email;
                 const fullName = profile.fullName;
                 const googleId = profile.googleId;
@@ -314,8 +308,7 @@ app.get('/api/auth/google/callback',
 
             const token = generateToken(user, userType);
 
-            // Redirect to main page with token
-            res.redirect(`/?token=${token}&userType=${userType}&userId=${user._id}&userName=${user.fullName}`);
+            res.redirect(`/?token=${token}&userType=${userType}&userId=${user._id}&userName=${encodeURIComponent(user.fullName)}`);
         } catch (error) {
             console.error('Google callback error:', error);
             res.redirect('/login.html?error=auth-failed');
@@ -333,61 +326,190 @@ app.post('/api/auth/logout', (req, res) => {
     });
 });
 
-// Check Auth Status
-app.get('/api/auth/me', authenticateToken, (req, res) => {
-    res.json(req.user);
+// Get current user profile (enhanced)
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
+    try {
+        const { userId, userType } = req.user;
+        let user;
+
+        if (userType === 'student') {
+            user = await Student.findById(userId)
+                .populate('courseAdviser', 'fullName email department staffId');
+            if (!user) return res.status(404).json({ message: 'Student not found' });
+
+            // Get additional stats
+            const registrations = await CourseRegistration.find({ student: userId });
+            const records = await AcademicRecord.find({ student: userId });
+            const pendingCount = registrations.filter(r => r.status === 'pending').length;
+            const totalCredits = records.reduce((sum, r) => sum + (r.gradePoint || 0), 0);
+
+            res.json({
+                ...user.toObject(),
+                userType: 'student',
+                stats: {
+                    coursesRegistered: registrations.length,
+                    pendingApprovals: pendingCount,
+                    totalRecords: records.length
+                }
+            });
+        } else {
+            user = await Adviser.findById(userId);
+            if (!user) return res.status(404).json({ message: 'Adviser not found' });
+
+            // Get adviser stats
+            const students = await Student.find({ courseAdviser: userId });
+            const pendingRegs = await CourseRegistration.find({ status: 'pending' });
+            const pendingIds = await IDCardRequest.find({ status: 'submitted' });
+
+            res.json({
+                ...user.toObject(),
+                userType: 'adviser',
+                stats: {
+                    totalStudents: students.length,
+                    pendingRegistrations: pendingRegs.length,
+                    pendingIdRequests: pendingIds.length
+                }
+            });
+        }
+    } catch (error) {
+        console.error('Profile fetch error:', error);
+        res.status(500).json({ message: 'Error fetching profile', error: error.message });
+    }
 });
 
-// ==================== MAIN ROUTES ====================
+// Update user profile
+app.put('/api/auth/profile', authenticateToken, async (req, res) => {
+    try {
+        const { userId, userType } = req.user;
+        const updates = req.body;
+
+        // Only allow safe fields to be updated
+        const allowedStudentFields = ['fullName', 'phone', 'level', 'department'];
+        const allowedAdviserFields = ['fullName', 'phone', 'department', 'officeHours', 'officeLocation'];
+
+        const allowedFields = userType === 'student' ? allowedStudentFields : allowedAdviserFields;
+        const safeUpdates = {};
+        for (const key of allowedFields) {
+            if (updates[key] !== undefined) {
+                safeUpdates[key] = updates[key];
+            }
+        }
+
+        let user;
+        if (userType === 'student') {
+            user = await Student.findByIdAndUpdate(userId, safeUpdates, { new: true });
+        } else {
+            user = await Adviser.findByIdAndUpdate(userId, safeUpdates, { new: true });
+        }
+
+        res.json({ message: 'Profile updated successfully', user });
+    } catch (error) {
+        console.error('Profile update error:', error);
+        res.status(500).json({ message: 'Error updating profile', error: error.message });
+    }
+});
+
+// ==================== API ROUTES (ALL PROTECTED) ====================
+app.use('/api/courses', authenticateToken, courseRoutes);
+app.use('/api/registrations', authenticateToken, registrationRoutes);
+app.use('/api/academic-records', authenticateToken, academicRecordRoutes);
+app.use('/api/id-card-requests', authenticateToken, idCardRequestRoutes);
+app.use('/api/advisers', authenticateToken, adviserRoutes);
+app.use('/api/messages', authenticateToken, messageRoutes);
+
+// List all advisers (for student selection)
+app.get('/api/advisers-list', authenticateToken, async (req, res) => {
+    try {
+        const advisers = await Adviser.find({}).select('fullName email department staffId');
+        res.json(advisers);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching advisers', error: error.message });
+    }
+});
+
+// Student chooses an adviser
+app.put('/api/auth/choose-adviser', authenticateToken, async (req, res) => {
+    try {
+        const { userId, userType } = req.user;
+        const { adviserId } = req.body;
+
+        if (userType !== 'student') {
+            return res.status(403).json({ message: 'Only students can choose an adviser' });
+        }
+
+        if (!adviserId) {
+            return res.status(400).json({ message: 'Adviser ID is required' });
+        }
+
+        const adviser = await Adviser.findById(adviserId);
+        if (!adviser) {
+            return res.status(404).json({ message: 'Adviser not found' });
+        }
+
+        // Update student's adviser
+        await Student.findByIdAndUpdate(userId, { courseAdviser: adviserId });
+
+        // Add student to adviser's list if not already there
+        if (!adviser.assignedStudents || !adviser.assignedStudents.includes(userId)) {
+            await Adviser.findByIdAndUpdate(adviserId, { $addToSet: { assignedStudents: userId } });
+        }
+
+        res.json({ message: `Successfully assigned to ${adviser.fullName}`, adviser: { fullName: adviser.fullName, email: adviser.email, department: adviser.department, staffId: adviser.staffId } });
+    } catch (error) {
+        console.error('Choose adviser error:', error);
+        res.status(500).json({ message: 'Error choosing adviser', error: error.message });
+    }
+});
+
+// ==================== PAGE ROUTES ====================
 
 // Serve login page
 app.get('/login.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'login.html'));
 });
 
-// Use API routes
-app.use('/api/courses', courseRoutes);
-app.use('/api/registrations', registrationRoutes);
-app.use('/api/academic-records', academicRecordRoutes);
-app.use('/api/id-card-requests', idCardRequestRoutes);
-
-// adviser-specific endpoints
-const adviserRoutes = require('./routes/advisers');
-app.use('/api/advisers', adviserRoutes);
-
-// Main protected route - check if user is authenticated
-app.get('/', (req, res) => {
-    const token = req.query.token;
-    if (token) {
-        // Token passed via query, let frontend handle verification
-        res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
-    } else {
-        // Check if token in request headers
-        const authHeader = req.headers.authorization;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
-        } else {
-            // No token found, redirect to login
-            res.redirect('/login.html');
-        }
-    }
+// Serve student dashboard
+app.get('/student-dashboard.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend', 'student-dashboard.html'));
 });
 
-// development helper: seed some initial courses
+// Serve adviser dashboard
+app.get('/adviser-dashboard.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend', 'adviser-dashboard.html'));
+});
+
+// Main route - router page
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
+});
+
+// ==================== SEED DATA ====================
 app.get('/api/seed', async (req, res) => {
     try {
-        const count = await Course.countDocuments();
-        if (count === 0) {
-            await Course.insertMany([
-                { courseCode: 'CS101', courseName: 'Intro to Computer Science', creditUnits: 3 },
-                { courseCode: 'MTH201', courseName: 'Calculus II', creditUnits: 4 },
-                { courseCode: 'ENG150', courseName: 'Academic Writing', creditUnits: 2 }
-            ]);
-        }
-        res.json({ message: 'Seeding complete' });
+        // Clear existing courses and re-seed with correct CPE courses
+        await Course.deleteMany({});
+        await Course.insertMany([
+            // 400-Level First Semester
+            { courseCode: 'CPE451', courseName: 'Computer Architecture & Organization', creditUnits: 3, level: '400', semester: 'First', department: 'Computer Engineering', capacity: 120 },
+            { courseCode: 'CPE453', courseName: 'Embedded Systems Design', creditUnits: 3, level: '400', semester: 'First', department: 'Computer Engineering', capacity: 120 },
+            { courseCode: 'CPE457', courseName: 'Operating Systems', creditUnits: 3, level: '400', semester: 'First', department: 'Computer Engineering', capacity: 120 },
+            { courseCode: 'CPE461', courseName: 'Engineering Design & Project I', creditUnits: 4, level: '400', semester: 'First', department: 'Computer Engineering', capacity: 120 },
+            { courseCode: 'CPE475', courseName: 'Artificial Intelligence', creditUnits: 3, level: '400', semester: 'First', department: 'Computer Engineering', capacity: 120 },
+            { courseCode: 'CPE433', courseName: 'Data Communication & Networks', creditUnits: 3, level: '400', semester: 'First', department: 'Computer Engineering', capacity: 120 },
+            // 400-Level Second Semester
+            { courseCode: 'CPE401', courseName: 'Industrial Training (SIWES)', creditUnits: 6, level: '400', semester: 'Second', department: 'Computer Engineering', capacity: 120 },
+            { courseCode: 'CPE499', courseName: 'Engineering Design & Project II', creditUnits: 4, level: '400', semester: 'Second', department: 'Computer Engineering', capacity: 120 },
+            // 300-Level
+            { courseCode: 'CED300', courseName: 'Engineering Communication', creditUnits: 2, level: '300', semester: 'First', department: 'General Engineering', capacity: 200 },
+            { courseCode: 'CPE301', courseName: 'Data Structures & Algorithms', creditUnits: 3, level: '300', semester: 'First', department: 'Computer Engineering', capacity: 150 },
+            { courseCode: 'CPE303', courseName: 'Database Management Systems', creditUnits: 3, level: '300', semester: 'First', department: 'Computer Engineering', capacity: 150 },
+            { courseCode: 'CPE305', courseName: 'Digital Logic Design', creditUnits: 3, level: '300', semester: 'First', department: 'Computer Engineering', capacity: 150 },
+            { courseCode: 'CPE307', courseName: 'Signals & Systems', creditUnits: 3, level: '300', semester: 'Second', department: 'Computer Engineering', capacity: 150 },
+            { courseCode: 'CPE309', courseName: 'Computer Networks I', creditUnits: 3, level: '300', semester: 'Second', department: 'Computer Engineering', capacity: 150 },
+        ]);
+        res.json({ message: 'Seeding complete — 13 CPE courses added' });
     } catch (err) {
         console.error('Seed error', err);
         res.status(500).json({ message: 'Error during seeding' });
     }
 });
-

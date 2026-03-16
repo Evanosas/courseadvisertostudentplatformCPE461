@@ -87,10 +87,29 @@ router.get('/pending/:adviserId', async (req, res) => {
     try {
         const registrations = await CourseRegistration.find({ status: 'pending' })
             .populate('student', 'fullName email matricNo')
-            .populate('course', 'courseCode courseName');
+            .populate('course', 'courseCode courseName creditUnits');
         res.json(registrations);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching pending registrations', error: error.message });
+    }
+});
+
+// Drop/delete a course registration (Student)
+router.delete('/:registrationId', async (req, res) => {
+    try {
+        const registration = await CourseRegistration.findById(req.params.registrationId);
+        if (!registration) {
+            return res.status(404).json({ message: 'Registration not found' });
+        }
+
+        if (registration.status === 'approved') {
+            return res.status(400).json({ message: 'Cannot drop an already approved course. Contact your adviser.' });
+        }
+
+        await CourseRegistration.findByIdAndDelete(req.params.registrationId);
+        res.json({ message: 'Course dropped successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error dropping course', error: error.message });
     }
 });
 

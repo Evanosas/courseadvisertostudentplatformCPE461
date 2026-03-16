@@ -6,16 +6,15 @@
   
   "scripts": {
     "start": "node server.js",
-    " run dev": "nodemon server.js",
+    "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "CourseQ - Academic Advising & Course Management Platform",
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "type": "module",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "express": "^4.18.2",

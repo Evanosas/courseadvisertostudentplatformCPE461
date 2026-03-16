@@ -244,6 +244,29 @@
             margin-bottom: 8px;
         }
 
+        .form-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 14px;
+            display: none;
+        }
+
+        .form-message.error {
+            background-color: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+            display: block;
+        }
+
+        .form-message.success {
+            background-color: #d1fae5;
+            color: #059669;
+            border: 1px solid #6ee7b7;
+            display: block;
+        }
+
         .message {
             padding: 12px;
             border-radius: 5px;
@@ -422,6 +445,15 @@
             localStorage.clear();
         });
 
+        // Redirect helper based on user type
+        function redirectToDashboard(userType) {
+            if (userType === 'adviser') {
+                window.location.href = '/adviser-dashboard.html';
+            } else {
+                window.location.href = '/student-dashboard.html';
+            }
+        }
+
         // Switch between tabs
         function switchTab(tab) {
             document.querySelectorAll('.form-content').forEach(el => el.classList.remove('active'));
@@ -485,7 +517,7 @@
 
                 showMessage('login-message', 'Login successful! Redirecting...', false);
                 setTimeout(() => {
-                    window.location.href = '/';
+                    redirectToDashboard(data.userType);
                 }, 1500);
             } catch (error) {
                 showMessage('login-message', 'An error occurred. Please try again.', true);
@@ -561,7 +593,7 @@
 
                 showMessage('register-message', 'Registration successful! Redirecting...', false);
                 setTimeout(() => {
-                    window.location.href = '/';
+                    redirectToDashboard(data.userType);
                 }, 1500);
             } catch (error) {
                 showMessage('register-message', 'An error occurred. Please try again.', true);

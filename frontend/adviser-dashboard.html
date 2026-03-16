@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CourseQ | Adviser Dashboard</title>
+    <meta name="description" content="CourseQ Course Adviser Dashboard - Manage students, approve registrations, and record grades">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #0f0f23;
+            --bg-secondary: #1a1a3e;
+            --bg-card: rgba(26, 26, 62, 0.7);
+            --bg-glass: rgba(255, 255, 255, 0.05);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --accent: #6366f1;
+            --accent-light: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.3);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-primary: #f1f5f9;
+            --text-secondary: rgba(241, 245, 249, 0.6);
+            --text-muted: rgba(241, 245, 249, 0.4);
+            --sidebar-width: 260px;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .sidebar {
+            position: fixed; top: 0; left: 0; width: var(--sidebar-width); height: 100vh;
+            background: linear-gradient(180deg, #1a1a3e 0%, #0f0f23 100%);
+            border-right: 1px solid var(--border-glass); padding: 24px 16px;
+            display: flex; flex-direction: column; z-index: 100; overflow-y: auto;
+        }
+        .sidebar-logo { font-size: 26px; font-weight: 800; margin-bottom: 8px; padding: 0 12px; }
+        .sidebar-logo span { color: var(--accent); }
+        .sidebar-subtitle { font-size: 11px; color: var(--text-muted); padding: 0 12px; margin-bottom: 28px; text-transform: uppercase; letter-spacing: 1.5px; }
+        .sidebar-user { background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: 12px; padding: 16px; margin-bottom: 28px; backdrop-filter: blur(10px); }
+        .sidebar-user-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+        .sidebar-user-role { font-size: 12px; color: #34d399; display: flex; align-items: center; gap: 6px; }
+        .sidebar-user-role::before { content: ''; width: 8px; height: 8px; background: var(--success); border-radius: 50%; }
+        .nav-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); padding: 0 12px; margin: 20px 0 8px; }
+        .nav-menu { list-style: none; }
+        .nav-item a { display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-radius: 10px; text-decoration: none; color: var(--text-secondary); font-size: 13.5px; font-weight: 500; transition: all 0.2s ease; margin-bottom: 2px; }
+        .nav-item a:hover { background: var(--bg-glass); color: var(--text-primary); }
+        .nav-item a.active { background: linear-gradient(135deg, rgba(99,102,241,0.2) 0%, rgba(99,102,241,0.05) 100%); color: var(--accent-light); border: 1px solid rgba(99,102,241,0.15); }
+        .nav-icon { font-size: 18px; width: 24px; text-align: center; }
+        .sidebar-footer { margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-glass); }
+        .logout-btn { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin: 0 16px; border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.3); background: rgba(239, 68, 68, 0.1); color: #f87171; cursor: pointer; font-size: 14px; font-weight: 600; width: calc(100% - 32px); text-align: left; font-family: inherit; transition: all 0.2s ease; }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); transform: translateY(-1px); }
+
+        .main-content { margin-left: var(--sidebar-width); padding: 28px 32px; min-height: 100vh; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+        .page-header h1 { font-size: 26px; font-weight: 700; }
+        .page-header h1 span { color: var(--accent-light); }
+        .header-date { font-size: 13px; color: var(--text-secondary); }
+
+        .section-content { display: none; }
+        .section-content.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px; }
+        .stat-card { background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 16px; padding: 22px; backdrop-filter: blur(12px); position: relative; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.3); }
+        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 16px 16px 0 0; }
+        .stat-card.purple::before { background: linear-gradient(90deg, #6366f1, #818cf8); }
+        .stat-card.green::before { background: linear-gradient(90deg, #10b981, #34d399); }
+        .stat-card.yellow::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .stat-card.blue::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .stat-icon { font-size: 28px; margin-bottom: 12px; }
+        .stat-value { font-size: 30px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+        .stat-card.purple .stat-value { color: var(--accent-light); }
+        .stat-card.green .stat-value { color: var(--success); }
+        .stat-card.yellow .stat-value { color: var(--warning); }
+        .stat-card.blue .stat-value { color: #60a5fa; }
+        .stat-label { font-size: 13px; color: var(--text-secondary); }
+
+        .card { background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 16px; padding: 24px; backdrop-filter: blur(12px); margin-bottom: 20px; }
+        .card-title { font-size: 17px; font-weight: 600; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; }
+        .card-title .icon { font-size: 20px; }
+
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table thead th { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 600; padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border-glass); }
+        .data-table tbody td { padding: 13px 14px; font-size: 13.5px; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .data-table tbody tr { transition: background 0.15s ease; }
+        .data-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+        .badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
+        .badge.success { background: rgba(16,185,129,0.15); color: #34d399; }
+        .badge.warning { background: rgba(245,158,11,0.15); color: #fbbf24; }
+        .badge.danger { background: rgba(239,68,68,0.15); color: #f87171; }
+        .badge.info { background: rgba(99,102,241,0.15); color: #818cf8; }
+
+        .btn { padding: 9px 18px; border-radius: 10px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; box-shadow: 0 4px 14px var(--accent-glow); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px var(--accent-glow); }
+        .btn-secondary { background: var(--bg-glass); color: var(--text-secondary); border: 1px solid var(--border-glass); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+        .btn-success { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+        .btn-success:hover { background: rgba(16,185,129,0.3); }
+        .btn-danger { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+        .btn-danger:hover { background: rgba(239,68,68,0.25); }
+        .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+        .form-group { margin-bottom: 16px; }
+        .form-label { display: block; font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-input, .form-select { width: 100%; padding: 11px 14px; background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: 10px; color: var(--text-primary); font-size: 14px; font-family: inherit; transition: border-color 0.2s; }
+        .form-input:focus, .form-select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+        .form-select option { background: var(--bg-secondary); color: var(--text-primary); }
+        textarea.form-input { resize: vertical; min-height: 80px; }
+
+        .search-box { padding: 11px 16px; background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: 10px; color: var(--text-primary); font-size: 14px; font-family: inherit; width: 100%; max-width: 400px; margin-bottom: 16px; transition: border-color 0.2s; }
+        .search-box:focus { outline: none; border-color: var(--accent); }
+        .search-box::placeholder { color: var(--text-muted); }
+
+        .profile-header { display: flex; align-items: center; gap: 24px; margin-bottom: 28px; }
+        .profile-avatar { width: 80px; height: 80px; border-radius: 20px; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; color: white; flex-shrink: 0; }
+        .profile-name { font-size: 24px; font-weight: 700; }
+        .profile-role { color: #34d399; font-size: 14px; margin-top: 4px; }
+        .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .profile-field { padding: 16px; background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: 12px; }
+        .profile-field-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 6px; }
+        .profile-field-value { font-size: 15px; font-weight: 500; }
+
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 10000; display: flex; flex-direction: column; gap: 8px; }
+        .toast { padding: 14px 20px; border-radius: 12px; font-size: 13px; font-weight: 500; backdrop-filter: blur(12px); border: 1px solid var(--border-glass); animation: slideIn 0.3s ease, slideOut 0.3s ease 3.7s; max-width: 360px; display: flex; align-items: center; gap: 10px; }
+        .toast.success { background: rgba(16,185,129,0.2); color: #34d399; border-color: rgba(16,185,129,0.3); }
+        .toast.error { background: rgba(239,68,68,0.2); color: #f87171; border-color: rgba(239,68,68,0.3); }
+        .toast.info { background: rgba(99,102,241,0.2); color: #818cf8; border-color: rgba(99,102,241,0.3); }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(100px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes slideOut { from { opacity: 1; } to { opacity: 0; transform: translateX(100px); } }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 5000; justify-content: center; align-items: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: var(--bg-secondary); border: 1px solid var(--border-glass); border-radius: 16px; padding: 28px; width: 90%; max-width: 500px; animation: fadeIn 0.2s ease; }
+        .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+        .modal-text { color: var(--text-secondary); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+        .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); }
+        .empty-state-icon { font-size: 48px; margin-bottom: 16px; }
+        .empty-state-text { font-size: 14px; color: var(--text-muted); }
+
+        .student-card { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--bg-glass); border: 1px solid var(--border-glass); border-radius: 12px; margin-bottom: 8px; transition: background 0.2s; }
+        .student-card:hover { background: rgba(255,255,255,0.06); }
+        .student-card-info { display: flex; align-items: center; gap: 14px; }
+        .student-card-avatar { width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: white; flex-shrink: 0; }
+        .student-card-name { font-weight: 600; font-size: 14px; }
+        .student-card-matric { font-size: 12px; color: var(--text-muted); }
+        .student-card-actions { display: flex; gap: 8px; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+        /* ===== CHAT ===== */
+        .chat-layout { display: grid; grid-template-columns: 280px 1fr; gap: 20px; height: 500px; }
+        .chat-sidebar { background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+        .chat-user-list { flex: 1; overflow-y: auto; }
+        .chat-user-item { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.03); cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .chat-user-item:hover { background: rgba(255,255,255,0.05); }
+        .chat-user-item.active { background: rgba(99,102,241,0.15); border-left: 3px solid var(--accent); }
+        .chat-user-info { display: flex; align-items: center; gap: 10px; overflow: hidden; }
+        .chat-avatar { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #6366f1, #8b5cf6); display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; flex-shrink: 0; }
+        .chat-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .chat-unread { background: var(--danger); color: white; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
+        
+        .chat-container { display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border-glass); border-radius: 12px; overflow: hidden; }
+        .chat-header { padding: 16px; background: rgba(99,102,241,0.1); border-bottom: 1px solid var(--border-glass); font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .message { max-width: 80%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.4; position: relative; }
+        .message.sent { align-self: flex-end; background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; border-bottom-right-radius: 4px; }
+        .message.received { align-self: flex-start; background: var(--bg-glass); border: 1px solid var(--border-glass); color: var(--text-primary); border-bottom-left-radius: 4px; }
+        .msg-time { display: block; font-size: 10px; opacity: 0.7; margin-top: 4px; text-align: right; }
+        .chat-input-area { padding: 16px; border-top: 1px solid var(--border-glass); background: var(--bg-glass); display: flex; gap: 12px; }
+        .chat-input { flex: 1; padding: 12px 16px; border-radius: 20px; border: 1px solid var(--border-glass); background: var(--bg-secondary); color: var(--text-primary); outline: none; transition: border-color 0.2s; }
+        .chat-input:focus { border-color: var(--accent); }
+        .chat-send-btn { background: var(--accent); color: white; border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
+        .chat-send-btn:hover { transform: scale(1.05); }
+
+        /* ===== RESPONSIVE ===== */
+        .menu-toggle { display: none; background: none; border: none; font-size: 24px; color: var(--text-primary); cursor: pointer; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); z-index: 90; }
+
+        @media (max-width: 768px) {
+            .menu-toggle { display: block; }
+            .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; box-shadow: 4px 0 20px rgba(0,0,0,0.5); }
+            .sidebar.active { transform: translateX(0); }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; padding: 20px 16px; }
+            .stats-row { grid-template-columns: 1fr; }
+            .profile-grid { grid-template-columns: 1fr; }
+            .form-row { grid-template-columns: 1fr; }
+            .chat-layout { grid-template-columns: 1fr; grid-template-rows: 200px 1fr; height: 800px; }
+            .page-header { flex-direction: row; align-items: center; justify-content: space-between; }
+            .page-header h1 { font-size: 20px; }
+            .header-date { display: none; }
+            
+            /* Make tables scrollable horizontally */
+            .data-table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; margin-bottom: 16px; }
+            .data-table { min-width: 800px; }
+            
+            /* Adjust padding on cards */
+            .card { padding: 16px; }
+            .form-group select, .form-group input { font-size: 16px; /* prevent iOS zoom */ }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-logo">Course<span>Q</span></div>
+        <div class="sidebar-subtitle">Adviser Portal</div>
+        <div class="sidebar-user">
+            <div class="sidebar-user-name" id="sidebar-name">Adviser</div>
+            <div class="sidebar-user-role">Online · Course Adviser</div>
+        </div>
+        <div class="nav-section-label">Overview</div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="#" data-section="dashboard" class="active"><span class="nav-icon">📊</span> Dashboard</a></li>
+            <li class="nav-item"><a href="#" data-section="students"><span class="nav-icon">👥</span> My Students</a></li>
+            <li class="nav-item"><a href="#" data-section="chat"><span class="nav-icon">💬</span> Messages</a></li>
+        </ul>
+        <div class="nav-section-label">Approvals</div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="#" data-section="registrations"><span class="nav-icon">📝</span> Registrations</a></li>
+            <li class="nav-item"><a href="#" data-section="id-requests"><span class="nav-icon">🆔</span> ID Requests</a></li>
+        </ul>
+        <div class="nav-section-label">Management</div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="#" data-section="grades"><span class="nav-icon">📈</span> Record Grades</a></li>
+            <li class="nav-item"><a href="#" data-section="courses"><span class="nav-icon">📚</span> Courses</a></li>
+        </ul>
+        <div class="nav-section-label">Account</div>
+        <ul class="nav-menu">
+            <li class="nav-item"><a href="#" data-section="profile"><span class="nav-icon">⚙️</span> Profile</a></li>
+        </ul>
+        <div class="sidebar-footer">
+            <button class="logout-btn" onclick="confirmLogout()"><span class="nav-icon">🚪</span> Logout</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header class="page-header">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                <h1>Welcome back, <span id="header-name">Adviser</span> 👋</h1>
+            </div>
+            <div class="header-date" id="header-date">Loading date...</div>
+        </header>
+
+        <!-- ====== DASHBOARD ====== -->
+        <div id="dashboard" class="section-content active">
+            <div class="stats-row">
+                <div class="stat-card purple">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-value" id="stat-students">0</div>
+                    <div class="stat-label">Total Students</div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-value" id="stat-pending-regs">0</div>
+                    <div class="stat-label">Pending Registrations</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-icon">🆔</div>
+                    <div class="stat-value" id="stat-pending-ids">0</div>
+                    <div class="stat-label">Pending ID Requests</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon">📊</div>
+                    <div class="stat-value" id="stat-avg-gpa">0.00</div>
+                    <div class="stat-label">Average GPA</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span class="icon">⚡</span> Quick Actions</div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+                    <button class="btn btn-primary" onclick="showSection('registrations')" style="justify-content: center; padding: 16px;">📝 Approve Registrations</button>
+                    <button class="btn btn-primary" onclick="showSection('grades')" style="justify-content: center; padding: 16px;">📈 Record Grades</button>
+                    <button class="btn btn-primary" onclick="showSection('courses')" style="justify-content: center; padding: 16px;">📚 Manage Courses</button>
+                    <button class="btn btn-primary" onclick="showSection('id-requests')" style="justify-content: center; padding: 16px;">🆔 ID Requests</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== MY STUDENTS ====== -->
+        <div id="students" class="section-content">
+            <div class="card">
+                <div class="card-title"><span class="icon">👥</span> My Students</div>
+                <input type="text" class="search-box" id="student-search" placeholder="🔍 Search students by name or matric number...">
+                <div id="student-list-container">
+                    <div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">Loading...</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== CHAT ====== -->
+        <div id="chat" class="section-content">
+            <div class="chat-layout">
+                <div class="chat-sidebar">
+                    <div style="padding: 16px; border-bottom: 1px solid var(--border-glass); font-weight: 600;">Conversations</div>
+                    <div class="chat-user-list" id="chat-user-list">
+                        <div class="empty-state-text" style="padding: 20px; text-align: center;">Loading students...</div>
+                    </div>
+                </div>
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span id="chat-current-name">Select a student</span>
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="chat-messages-area">
+                        <div class="empty-state-text" style="height: 100%; display: flex; align-items: center; justify-content: center;">
+                            Select a student from the left to start chatting
+                        </div>
+                    </div>
+                    <div class="chat-input-area" id="chat-input-area" style="opacity: 0.5; pointer-events: none;">
+                        <input type="text" class="chat-input" id="chat-message-input" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendAdviserMessage()">
+                        <button class="chat-send-btn" onclick="sendAdviserMessage()">➤</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== PENDING ID REQUESTS ====== -->
+        <div id="id-requests" class="section-content">
+            <div class="card">
+                <div class="card-title"><span class="icon">🆔</span> Pending ID Card Requests</div>
+                <div id="pending-ids-container">
+                    <div class="empty-state"><div class="empty-state-text">Loading...</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== RECORD GRADES ====== -->
+        <div id="grades" class="section-content">
+            <div class="card">
+                <div class="card-title"><span class="icon">📈</span> Record Student Grades</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Select Student</label>
+                        <select id="grade-student" class="form-select" onchange="loadStudentCourses()">
+                            <option value="">-- Choose student --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Select Course</label>
+                        <select id="grade-course" class="form-select">
+                            <option value="">-- Choose course --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Score (0-100)</label>
+                        <input type="number" class="form-input" id="grade-score" min="0" max="100" placeholder="e.g., 75">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Academic Session</label>
+                        <input type="text" class="form-input" id="grade-session" placeholder="e.g., 2024/2025">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Semester</label>
+                    <select id="grade-semester" class="form-select">
+                        <option value="First">First Semester</option>
+                        <option value="Second">Second Semester</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="submitGrade()">Submit Grade</button>
+            </div>
+        </div>
+
+        <!-- ====== MANAGE COURSES ====== -->
+        <div id="courses" class="section-content">
+            <div class="card">
+                <div class="card-title"><span class="icon">➕</span> Add New Course</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Course Code</label>
+                        <input type="text" class="form-input" id="new-course-code" placeholder="e.g., CPE461">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Course Name</label>
+                        <input type="text" class="form-input" id="new-course-name" placeholder="e.g., Engineering Design">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Credit Units</label>
+                        <input type="number" class="form-input" id="new-course-credits" min="1" max="6" placeholder="e.g., 3">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Level</label>
+                        <select id="new-course-level" class="form-select">
+                            <option value="100">100</option>
+                            <option value="200">200</option>
+                            <option value="300">300</option>
+                            <option value="400" selected>400</option>
+                            <option value="500">500</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Semester</label>
+                        <select id="new-course-semester" class="form-select">
+                            <option value="First">First</option>
+                            <option value="Second">Second</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Capacity</label>
+                        <input type="number" class="form-input" id="new-course-capacity" placeholder="e.g., 100">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="addCourse()">Add Course</button>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><span class="icon">📖</span> All Courses</div>
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Code</th><th>Name</th><th>Credits</th><th>Level</th><th>Semester</th><th>Capacity</th><th>Action</th></tr></thead>
+                        <tbody id="all-courses-body">
+                            <tr><td colspan="7" class="empty-state-text">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== PENDING REGISTRATIONS ====== -->
+        <div id="registrations" class="section-content">
+            <div class="card">
+                <div class="card-title"><span class="icon">📝</span> Pending Registrations</div>
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead><tr><th>Student</th><th>Matric No</th><th>Course Code</th><th>Date</th><th>Action</th></tr></thead>
+                        <tbody id="registrations-body">
+                            <tr><td colspan="5" class="empty-state-text">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+            </div>
+        </div>
+
+        <!-- ====== PROFILE ====== -->
+        <div id="profile" class="section-content">
+            <div class="card">
+                <div class="card-title"><span class="icon">⚙️</span> My Profile</div>
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profile-avatar">A</div>
+                    <div>
+                        <div class="profile-name" id="profile-fullname">Adviser Name</div>
+                        <div class="profile-role">Course Adviser · CourseQ</div>
+                    </div>
+                </div>
+                <div class="profile-grid">
+                    <div class="profile-field">
+                        <div class="profile-field-label">Full Name</div>
+                        <div class="profile-field-value" id="pf-name">—</div>
+                    </div>
+                    <div class="profile-field">
+                        <div class="profile-field-label">Email Address</div>
+                        <div class="profile-field-value" id="pf-email">—</div>
+                    </div>
+                    <div class="profile-field">
+                        <div class="profile-field-label">Staff ID</div>
+                        <div class="profile-field-value" id="pf-staffid">—</div>
+                    </div>
+                    <div class="profile-field">
+                        <div class="profile-field-label">Department</div>
+                        <div class="profile-field-value" id="pf-dept">—</div>
+                    </div>
+                    <div class="profile-field">
+                        <div class="profile-field-label">Registration Method</div>
+                        <div class="profile-field-value" id="pf-method">—</div>
+                    </div>
+                    <div class="profile-field">
+                        <div class="profile-field-label">Account Created</div>
+                        <div class="profile-field-value" id="pf-created">—</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Logout Modal -->
+    <div class="modal-overlay" id="logout-modal">
+        <div class="modal-box">
+            <div class="modal-title">Confirm Logout</div>
+            <div class="modal-text">Are you sure you want to log out? You will need to sign in again.</div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeLogoutModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="performLogout()">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div class="modal-overlay" id="reject-modal">
+        <div class="modal-box">
+            <div class="modal-title">Reject Registration</div>
+            <div class="form-group">
+                <label class="form-label">Reason for rejection</label>
+                <textarea class="form-input" id="reject-reason" placeholder="Enter reason..."></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeRejectModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="submitRejection()">Reject</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ==================== AUTH ====================
+    function getAuth() {
+        return {
+            token: localStorage.getItem('token'),
+            userId: localStorage.getItem('userId'),
+            userName: localStorage.getItem('userName'),
+            userType: localStorage.getItem('userType')
+        };
+    }
+
+    function authHeaders() {
+        return { 'Authorization': `Bearer ${getAuth().token}`, 'Content-Type': 'application/json' };
+    }
+
+    function checkAuth() {
+        const auth = getAuth();
+        if (!auth.token || auth.userType !== 'adviser') {
+            window.location.href = '/login.html';
+            return false;
+        }
+        return true;
+    }
+
+    // ==================== TOAST ====================
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `<span>${icons[type] || ''}</span> ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    // ==================== NAVIGATION ====================
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    function showSection(sectionId) {
+        document.querySelectorAll('.section-content').forEach(el => el.classList.remove('active'));
+        document.getElementById(sectionId).classList.add('active');
+
+        document.querySelectorAll('.nav-item a').forEach(el => {
+            if(el.dataset.section === sectionId) el.classList.add('active');
+            else el.classList.remove('active');
+        });
+
+        // Close sidebar on mobile after navigating
+        if (window.innerWidth <= 768) {
+            document.getElementById('sidebar').classList.remove('active');
+            document.getElementById('sidebar-overlay').classList.remove('active');
+        }
+    }
+
+    document.querySelectorAll('.nav-item a[data-section]').forEach(link => {
+        link.addEventListener('click', (e) => { e.preventDefault(); showSection(link.dataset.section); });
+    });
+
+    // ==================== LOGOUT ====================
+    function confirmLogout() { document.getElementById('logout-modal').classList.add('active'); }
+    function closeLogoutModal() { document.getElementById('logout-modal').classList.remove('active'); }
+    function performLogout() {
+        fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.href = '/login.html';
+    }
+
+    // ==================== DATE ====================
+    function updateDate() {
+        const now = new Date();
+        document.getElementById('header-date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    // ==================== DATA LOADING ====================
+    let allStudents = [];
+
+    async function loadDashboard() {
+        const auth = getAuth();
+        document.getElementById('sidebar-name').textContent = auth.userName;
+        document.getElementById('header-name').textContent = '';
+        updateDate();
+
+        await Promise.allSettled([
+            loadStats(),
+            loadStudents(),
+            loadPendingRegistrations(),
+            loadPendingIdRequests(),
+            loadAllCourses(),
+            loadProfile()
+        ]);
+
+        // Populate grade student dropdown
+        const gradeStudentSelect = document.getElementById('grade-student');
+        gradeStudentSelect.innerHTML = '<option value="">-- Choose student --</option>' +
+            allStudents.map(s => `<option value="${s._id}">${s.fullName} (${s.matricNo || 'N/A'})</option>`).join('');
+    }
+
+    // Load stats
+    async function loadStats() {
+        const auth = getAuth();
+        try {
+            const res = await fetch(`/api/advisers/${auth.userId}/stats`, { headers: authHeaders() });
+            const stats = await res.json();
+            document.getElementById('stat-students').textContent = stats.totalStudents;
+            document.getElementById('stat-pending-regs').textContent = stats.pendingRegistrations;
+            document.getElementById('stat-pending-ids').textContent = stats.pendingIdRequests;
+            document.getElementById('stat-avg-gpa').textContent = stats.averageGPA;
+        } catch (err) {
+            console.error('Error loading stats:', err);
+        }
+    }
+
+    // Load students
+    async function loadStudents() {
+        const auth = getAuth();
+        try {
+            const res = await fetch(`/api/advisers/${auth.userId}/students`, { headers: authHeaders() });
+            allStudents = await res.json();
+            renderStudents(allStudents);
+        } catch (err) {
+            console.error('Error loading students:', err);
+        }
+    }
+
+    function renderStudents(students) {
+        const container = document.getElementById('student-list-container');
+        if (!students.length) {
+            container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">No students assigned yet</div></div>';
+            return;
+        }
+        container.innerHTML = students.map(s => `
+            <div class="student-card" data-name="${(s.fullName || '').toLowerCase()} ${(s.matricNo || '').toLowerCase()}">
+                <div class="student-card-info">
+                    <div class="student-card-avatar">${(s.fullName || 'S')[0].toUpperCase()}</div>
+                    <div>
+                        <div class="student-card-name">${s.fullName}</div>
+                        <div class="student-card-matric">${s.matricNo || 'N/A'} · ${s.email}</div>
+                    </div>
+                </div>
+                <div class="student-card-actions">
+                    <button class="btn btn-secondary btn-sm" onclick="openChatWithStudent('${s._id}', '${s.fullName}')">Message</button>
+                </div>
+            </div>
+        `).join('');
+
+        renderChatUsers(students);
+    }
+
+    // ==================== CHAT SYSTEM ====================
+    let currentChatStudentId = null;
+
+    function renderChatUsers(students) {
+        const list = document.getElementById('chat-user-list');
+        if (!students.length) {
+            list.innerHTML = '<div class="empty-state-text" style="padding: 20px; text-align: center;">No students assigned.</div>';
+            return;
+        }
+
+        list.innerHTML = students.map(s => `
+            <div class="chat-user-item" id="chat-user-${s._id}" onclick="openChatWithStudent('${s._id}', '${s.fullName}')">
+                <div class="chat-user-info">
+                    <div class="chat-avatar">${(s.fullName || 'S')[0].toUpperCase()}</div>
+                    <div class="chat-name">${s.fullName}</div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function openChatWithStudent(studentId, studentName) {
+        showSection('chat');
+        currentChatStudentId = studentId;
+        
+        // Update UI
+        document.querySelectorAll('.chat-user-item').forEach(el => el.classList.remove('active'));
+        const activeItem = document.getElementById(`chat-user-${studentId}`);
+        if (activeItem) activeItem.classList.add('active');
+        
+        document.getElementById('chat-current-name').textContent = studentName;
+        
+        const inputArea = document.getElementById('chat-input-area');
+        inputArea.style.opacity = '1';
+        inputArea.style.pointerEvents = 'auto';
+        
+        loadAdviserChatMessages();
+    }
+
+    async function loadAdviserChatMessages() {
+        if (!currentChatStudentId) return;
+        const auth = getAuth();
+        
+        try {
+            const res = await fetch(`/api/messages/conversation/${auth.userId}/${currentChatStudentId}`, { headers: authHeaders() });
+            const messages = await res.json();
+            
+            const chatBox = document.getElementById('chat-messages-area');
+            
+            if (messages.length === 0) {
+                chatBox.innerHTML = '<div class="empty-state-text" style="height: 100%; display: flex; align-items: center; justify-content: center;">No messages yet. Say hello!</div>';
+                return;
+            }
+            
+            const isAtBottom = chatBox.scrollHeight - chatBox.scrollTop <= chatBox.clientHeight + 50;
+            
+            chatBox.innerHTML = messages.map(msg => {
+                const isSentByMe = msg.sender === auth.userId;
+                const time = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return `
+                    <div class="message ${isSentByMe ? 'sent' : 'received'}">
+                        <div>${msg.content}</div>
+                        <span class="msg-time">${time}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            if (isAtBottom) {
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+            
+            fetch(`/api/messages/read/${currentChatStudentId}/${auth.userId}`, { 
+                method: 'PUT', headers: authHeaders() 
+            }).catch(e => console.error(e));
+            
+        } catch (err) {
+            console.error('Error loading chats:', err);
+        }
+    }
+
+    async function sendAdviserMessage() {
+        if (!currentChatStudentId) return;
+        const input = document.getElementById('chat-message-input');
+        const content = input.value.trim();
+        
+        if (!content) return;
+        
+        const auth = getAuth();
+        try {
+            // Optimistic UI update
+            const chatBox = document.getElementById('chat-messages-area');
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            if (chatBox.querySelector('.empty-state-text')) chatBox.innerHTML = '';
+            
+            chatBox.innerHTML += `
+                <div class="message sent" style="opacity: 0.7;">
+                    <div>${content}</div>
+                    <span class="msg-time">${time}</span>
+                </div>
+            `;
+            chatBox.scrollTop = chatBox.scrollHeight;
+            input.value = '';
+            
+            const res = await fetch('/api/messages', {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    senderId: auth.userId,
+                    senderType: 'Adviser',
+                    receiverId: currentChatStudentId,
+                    receiverType: 'Student',
+                    content: content
+                })
+            });
+            
+            if (res.ok) {
+                loadAdviserChatMessages();
+            } else {
+                showToast('Failed to send message', 'error');
+            }
+        } catch (err) {
+            showToast('Network error sending message', 'error');
+        }
+    }
+
+    // Poll messages every 5 seconds if chat is open
+    setInterval(() => {
+        if (document.getElementById('chat').classList.contains('active') && currentChatStudentId) {
+            loadAdviserChatMessages();
+        }
+    }, 5000);
+
+    // Student search
+    document.getElementById('student-search').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('.student-card');
+        cards.forEach(card => {
+            card.style.display = card.dataset.name.includes(q) ? '' : 'none';
+        });
+    });
+
+    // Load pending registrations
+    async function loadPendingRegistrations() {
+        const auth = getAuth();
+        try {
+            const res = await fetch(`/api/registrations/pending/${auth.userId}`, { headers: authHeaders() });
+            const regs = await res.json();
+
+            const container = document.getElementById('pending-regs-container');
+            if (!regs.length) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">No pending registrations</div></div>';
+                return;
+            }
+
+            container.innerHTML = `<table class="data-table">
+                <thead><tr><th>Student</th><th>Course</th><th>Credits</th><th>Date</th><th>Actions</th></tr></thead>
+                <tbody>${regs.map(r => `
+                    <tr>
+                        <td><strong>${r.student?.fullName || 'N/A'}</strong><br><span style="font-size:11px;color:var(--text-muted);">${r.student?.matricNo || ''}</span></td>
+                        <td style="color:var(--accent-light);font-weight:600;">${r.course?.courseCode || 'N/A'}<br><span style="font-size:11px;color:var(--text-muted);font-weight:400;">${r.course?.courseName || ''}</span></td>
+                        <td>${r.course?.creditUnits || '—'}</td>
+                        <td>${new Date(r.registrationDate).toLocaleDateString()}</td>
+                        <td>
+                            <button class="btn btn-success btn-sm" onclick="approveReg('${r._id}')">Approve</button>
+                            <button class="btn btn-danger btn-sm" onclick="openRejectModal('${r._id}')">Reject</button>
+                        </td>
+                    </tr>
+                `).join('')}</tbody>
+            </table>`;
+        } catch (err) {
+            console.error('Error loading pending regs:', err);
+        }
+    }
+
+    // Approve registration
+    async function approveReg(regId) {
+        const auth = getAuth();
+        try {
+            const res = await fetch(`/api/registrations/${regId}/approve`, {
+                method: 'PUT',
+                headers: authHeaders(),
+                body: JSON.stringify({ adviserId: auth.userId })
+            });
+            if (res.ok) {
+                showToast('Registration approved!', 'success');
+                loadPendingRegistrations();
+                loadStats();
+            }
+        } catch (err) {
+            showToast('Error approving', 'error');
+        }
+    }
+
+    // Reject registration
+    let rejectTargetId = null;
+    function openRejectModal(regId) {
+        rejectTargetId = regId;
+        document.getElementById('reject-reason').value = '';
+        document.getElementById('reject-modal').classList.add('active');
+    }
+    function closeRejectModal() { document.getElementById('reject-modal').classList.remove('active'); }
+
+    async function submitRejection() {
+        const notes = document.getElementById('reject-reason').value.trim();
+        try {
+            const res = await fetch(`/api/registrations/${rejectTargetId}/reject`, {
+                method: 'PUT',
+                headers: authHeaders(),
+                body: JSON.stringify({ notes })
+            });
+            if (res.ok) {
+                showToast('Registration rejected', 'info');
+                closeRejectModal();
+                loadPendingRegistrations();
+                loadStats();
+            }
+        } catch (err) {
+            showToast('Error rejecting', 'error');
+        }
+    }
+
+    // Load pending ID requests
+    async function loadPendingIdRequests() {
+        const auth = getAuth();
+        try {
+            const res = await fetch(`/api/id-card-requests/pending/${auth.userId}`, { headers: authHeaders() });
+            const reqs = await res.json();
+
+            const container = document.getElementById('pending-ids-container');
+            if (!reqs.length) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">✅</div><div class="empty-state-text">No pending ID card requests</div></div>';
+                return;
+            }
+
+            container.innerHTML = `<table class="data-table">
+                <thead><tr><th>Student</th><th>Type</th><th>Date</th><th>Action</th></tr></thead>
+                <tbody>${reqs.map(r => `
+                    <tr>
+                        <td><strong>${r.student?.fullName || 'N/A'}</strong><br><span style="font-size:11px;color:var(--text-muted);">${r.student?.matricNo || ''}</span></td>
+                        <td style="text-transform:capitalize;">${r.requestType}</td>
+                        <td>${new Date(r.requestDate).toLocaleDateString()}</td>
+                        <td><button class="btn btn-success btn-sm" onclick="approveIdReq('${r._id}')">Approve</button></td>
+                    </tr>
+                `).join('')}</tbody>
+            </table>`;
+        } catch (err) {
+            console.error('Error loading ID requests:', err);
+        }
+    }
+
+    async function approveIdReq(reqId) {
+        const auth = getAuth();
+        try {
+            const res = await fetch(`/api/id-card-requests/${reqId}/approve`, {
+                method: 'PUT',
+                headers: authHeaders(),
+                body: JSON.stringify({ adviserId: auth.userId })
+            });
+            if (res.ok) {
+                showToast('ID card request approved!', 'success');
+                loadPendingIdRequests();
+                loadStats();
+            }
+        } catch (err) {
+            showToast('Error approving', 'error');
+        }
+    }
+
+    // Load student's courses for grade entry
+    async function loadStudentCourses() {
+        const studentId = document.getElementById('grade-student').value;
+        const courseSelect = document.getElementById('grade-course');
+        if (!studentId) { courseSelect.innerHTML = '<option value="">-- Choose course --</option>'; return; }
+
+        try {
+            const res = await fetch(`/api/registrations/student/${studentId}`, { headers: authHeaders() });
+            const regs = await res.json();
+            courseSelect.innerHTML = '<option value="">-- Choose course --</option>' +
+                regs.filter(r => r.status === 'approved').map(r =>
+                    `<option value="${r.course?._id}">${r.course?.courseCode} — ${r.course?.courseName}</option>`
+                ).join('');
+        } catch (err) {
+            console.error('Error loading student courses:', err);
+        }
+    }
+
+    // Submit grade
+    async function submitGrade() {
+        const studentId = document.getElementById('grade-student').value;
+        const courseId = document.getElementById('grade-course').value;
+        const score = parseFloat(document.getElementById('grade-score').value);
+        const session = document.getElementById('grade-session').value.trim();
+        const semester = document.getElementById('grade-semester').value;
+        const auth = getAuth();
+
+        if (!studentId || !courseId || isNaN(score) || !session) {
+            showToast('Please fill in all fields', 'error'); return;
+        }
+        if (score < 0 || score > 100) {
+            showToast('Score must be between 0 and 100', 'error'); return;
+        }
+
+        try {
+            const res = await fetch('/api/academic-records', {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ studentId, courseId, academicSession: session, semester, score, recordedBy: auth.userId })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showToast('Grade recorded successfully!', 'success');
+                document.getElementById('grade-score').value = '';
+                document.getElementById('grade-session').value = '';
+            } else {
+                showToast(data.message || 'Failed to record grade', 'error');
+            }
+        } catch (err) {
+            showToast('Error submitting grade', 'error');
+        }
+    }
+
+    // Load all courses
+    async function loadAllCourses() {
+        try {
+            const res = await fetch('/api/courses', { headers: authHeaders() });
+            const courses = await res.json();
+
+            document.getElementById('all-courses-body').innerHTML = courses.map(c => `
+                <tr>
+                    <td style="color:var(--accent-light);font-weight:600;">${c.courseCode}</td>
+                    <td>${c.courseName}</td>
+                    <td>${c.creditUnits}</td>
+                    <td>${c.level}</td>
+                    <td>${c.semester || '—'}</td>
+                    <td>${c.capacity || '∞'}</td>
+                    <td><button class="btn btn-danger btn-sm" onclick="deleteCourse('${c._id}')">Delete</button></td>
+                </tr>
+            `).join('') || '<tr><td colspan="7" class="empty-state-text">No courses yet</td></tr>';
+        } catch (err) {
+            console.error('Error loading courses:', err);
+        }
+    }
+
+    // Add course
+    async function addCourse() {
+        const courseCode = document.getElementById('new-course-code').value.trim();
+        const courseName = document.getElementById('new-course-name').value.trim();
+        const creditUnits = parseInt(document.getElementById('new-course-credits').value);
+        const level = document.getElementById('new-course-level').value;
+        const semester = document.getElementById('new-course-semester').value;
+        const capacity = parseInt(document.getElementById('new-course-capacity').value) || null;
+
+        if (!courseCode || !courseName || !creditUnits || !level) {
+            showToast('Please fill in all required fields', 'error'); return;
+        }
+
+        try {
+            const res = await fetch('/api/courses', {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ courseCode, courseName, creditUnits, level, semester, capacity })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showToast('Course added successfully!', 'success');
+                document.getElementById('new-course-code').value = '';
+                document.getElementById('new-course-name').value = '';
+                document.getElementById('new-course-credits').value = '';
+                document.getElementById('new-course-capacity').value = '';
+                loadAllCourses();
+            } else {
+                showToast(data.message || 'Failed to add course', 'error');
+            }
+        } catch (err) {
+            showToast('Error adding course', 'error');
+        }
+    }
+
+    // Delete course
+    async function deleteCourse(courseId) {
+        if (!confirm('Delete this course? This cannot be undone.')) return;
+        try {
+            const res = await fetch(`/api/courses/${courseId}`, {
+                method: 'DELETE',
+                headers: authHeaders()
+            });
+            if (res.ok) {
+                showToast('Course deleted', 'success');
+                loadAllCourses();
+            }
+        } catch (err) {
+            showToast('Error deleting course', 'error');
+        }
+    }
+
+    // Load profile
+    async function loadProfile() {
+        try {
+            const res = await fetch('/api/auth/me', { headers: authHeaders() });
+            const user = await res.json();
+
+            const initials = (user.fullName || 'A').split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+            document.getElementById('profile-avatar').textContent = initials;
+            document.getElementById('profile-fullname').textContent = user.fullName || 'Adviser';
+            document.getElementById('pf-name').textContent = user.fullName || '—';
+            document.getElementById('pf-email').textContent = user.email || '—';
+            document.getElementById('pf-staffid').textContent = user.staffId || '—';
+            document.getElementById('pf-dept').textContent = user.department || '—';
+            document.getElementById('pf-method').textContent = (user.registeredWith || 'email').toUpperCase();
+            document.getElementById('pf-created').textContent = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—';
+        } catch (err) {
+            console.error('Error loading profile:', err);
+        }
+    }
+
+    // ==================== INIT ====================
+    document.addEventListener('DOMContentLoaded', () => {
+        if (checkAuth()) loadDashboard();
+    });
+    </script>
+</body>
+</html>
